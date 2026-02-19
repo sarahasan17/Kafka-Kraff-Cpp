@@ -9,7 +9,7 @@ int main()
 {
     const std::string brokers = "kafka:9092";
     const std::string topic = "orders";
-    const std::string group_id = "cpp-consumer";
+    const std::string group_id = "notification-service";
 
     char errstr[512];
 
@@ -25,14 +25,15 @@ int main()
     rd_kafka_topic_partition_list_add(topics, topic.c_str(), -1);
 
     rd_kafka_subscribe(consumer, topics);
-    std::cout << "Listening for JSON messages..." << std::endl;
+
+    std::cout << "📩 Notification service listening for new orders...\n";
 
     while (true)
     {
         rd_kafka_message_t *msg = rd_kafka_consumer_poll(consumer, 1000);
-
         if (!msg)
             continue;
+
         if (msg->err)
         {
             rd_kafka_message_destroy(msg);
@@ -43,18 +44,20 @@ int main()
 
         try
         {
-            json event = json::parse(payload);
+            json j = json::parse(payload);
 
-            std::cout << "\n📦 Received Order Event:\n";
-            std::cout << "Order ID: " << event["orderId"] << "\n";
-            std::cout << "Customer: " << event["customer"] << "\n";
-            std::cout << "Amount: " << event["amount"] << "\n";
-            std::cout << "Status: " << event["status"] << "\n";
-            std::cout << "Timestamp: " << event["timestamp"] << "\n\n";
+            std::cout << "\n🔔 New Order Notification\n";
+            std::cout << "Customer: " << j["customer"] << "\n";
+            std::cout << "Amount: ₹" << j["amount"] << "\n";
+            std::cout << "Status: " << j["status"] << "\n";
+
+            std::cout << "📨 Sending Email...\n";
+            std::cout << "📱 Sending SMS...\n";
+            std::cout << "✔ Notification Completed!\n";
         }
-        catch (std::exception &e)
+        catch (...)
         {
-            std::cerr << "JSON parse error: " << e.what() << std::endl;
+            std::cout << "Invalid JSON received.\n";
         }
 
         rd_kafka_message_destroy(msg);
